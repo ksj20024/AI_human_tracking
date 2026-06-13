@@ -1,0 +1,19 @@
+# .gitignore
+
+# 대용량 데이터셋 (AWS에서 직접 다운로드 예정)
+data/
+
+# 모델 가중치 파일 (AWS에서 스크립트로 다운로드 예정)
+weights/
+*.pt
+*.pth
+*.onnx
+
+# 파이썬 및 가상환경 파편
+__pycache__/
+*.pyc
+.venv/
+.conda/
+
+# 실험 결과 데이터 (용량이 커질 수 있으므로 제외)
+results/
