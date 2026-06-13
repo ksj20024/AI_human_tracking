@@ -15,20 +15,37 @@ __pycache__/
 *$py.class
 .pytest_cache/
 
-# ⚠️ [CRITICAL] 대용량 원본 및 하이브리드 가공 데이터셋 제외
-data/MOT17/
-data/MOT20/
-data/processed_mot/
+# ======================================================================
+# 📂 [⚠️ 핵심] 폴더 구조(뼈대)는 깃허브에 올리되, 내부 대용량 내용물만 무시
+# ======================================================================
 
-# 🧠 Ultralytics 가중치 다운로드 파일 및 자동 스윕 훈련 로그 폴더 제외
+# 1. MOT17 원본 데이터 폴더 내부 비우기
+data/MOT17/*
+!data/MOT17/.gitkeep
+
+# 2. MOT20 원본 데이터 폴더 내부 비우기
+data/MOT20/*
+!data/MOT20/.gitkeep
+
+# 3. 고속 심볼릭 링크로 가공될 출력 폴더 내부 비우기
+data/processed_mot/*
+!data/processed_mot/.gitkeep
+
+# 4. 학습 완료 후 생성될 챔피언 가중치 폴더 내부 비우기
+weights/*
+!weights/.gitkeep
+
+# 5. 시나리오 실험 결과 리포트가 쌓일 폴더 내부 비우기
+results/*
+!results/.gitkeep
+
+# ======================================================================
+# 🧠 Ultralytics 가중치 다운로드 및 실행 임시 파일 완전히 무시
+# ======================================================================
 yolo11n.pt
 rtdetr-l.pt
 runs/
 runs_tuning_yolo/
 runs_tuning_detr/
 config/temp_bytetrack_*.yaml
-
-# 💾 실험 결과 리포트 및 임시 파일 제외
-results/
-*.csv
 *.log
