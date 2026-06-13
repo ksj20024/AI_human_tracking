@@ -18,7 +18,6 @@ def setup_kaggle_dataset(kaggle_repo: str, target_dir_name: str):
     print("=" * 60)
 
     # 1. 캐그랩을 통해 다운로드 (자동 압축 해제까지 수행됨)
-    # 💡 팁: kagglehub는 public 데이터셋의 경우 별도의 API 토큰 로그인 없이도 다운로드 가능합니다.
     downloaded_cache_path = kagglehub.dataset_download(kaggle_repo)
     print(f"✅ 다운로드 완료 (시스템 캐시 경로: {downloaded_cache_path})")
 
@@ -30,10 +29,21 @@ def setup_kaggle_dataset(kaggle_repo: str, target_dir_name: str):
     if project_target_path.exists():
         shutil.rmtree(project_target_path)
 
-    # 3. 캐시 폴더의 내용물을 프로젝트 data 폴더로 이동 (EBS 디스크 용량 이중 차지 방지)
+    # 3. 캐시 폴더의 내용물을 프로젝트 data 폴더로 이동
     print(f"🚚 캐시 저장소 ➔ 프로젝트 폴더({project_target_path})로 데이터 동기화 중...")
     shutil.copytree(downloaded_cache_path, project_target_path)
-    print(f"✨ {target_dir_name} 인프라 배치 완료 완료!\n")
+
+    # 💡 [보정] 중복 폴더 구조 해결 (data/MOT17/MOT17 -> data/MOT17)
+    nested_path = project_target_path / target_dir_name
+    if nested_path.is_dir():
+        print(f"🔄 중복 폴더 구조 감지 ({nested_path}) ➔ 구조 평탄화 진행 중...")
+        for file_path in nested_path.iterdir():
+            # 알맹이들을 한 단계 상위 폴더(project_target_path)로 이동
+            shutil.move(str(file_path), str(project_target_path))
+        # 알맹이가 빠져나간 빈 중복 폴더 삭제
+        nested_path.rmdir()
+
+    print(f"✨ {target_dir_name} 인프라 배치 완료!\n")
 
 
 if __name__ == "__main__":

@@ -55,6 +55,12 @@ shutil.copytree(cache_path, target_path)
 "
     echo "MOT17 캐글 우회 배치 완료"
 fi
+
+# 💡 MOT17 중복 폴더 구조 보정 (data/MOT17/MOT17 -> data/MOT17)
+if [ -d "data/MOT17/MOT17" ]; then
+    mv data/MOT17/MOT17/* data/MOT17/ 2>/dev/null || true
+    rmdir data/MOT17/MOT17 2>/dev/null || true
+fi
 echo "------------------------------------------------------------------"
 
 # 6. MOT20 백그라운드 고속 다운로드 및 압축 해제 후 삭제 (실패 시 캐글 우회)
@@ -76,6 +82,12 @@ if target_path.exists(): shutil.rmtree(target_path)
 shutil.copytree(cache_path, target_path)
 "
     echo "MOT20 캐글 우회 배치 완료"
+fi
+
+# 💡 MOT20 중복 폴더 구조 보정 (data/MOT20/MOT20 -> data/MOT20)
+if [ -d "data/MOT20/MOT20" ]; then
+    mv data/MOT20/MOT20/* data/MOT20/ 2>/dev/null || true
+    rmdir data/MOT20/MOT20 2>/dev/null || true
 fi
 
 echo "=================================================================="
