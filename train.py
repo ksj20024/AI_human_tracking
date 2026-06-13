@@ -13,10 +13,10 @@ def run_automated_tuning_sweep():
     os.makedirs(output_weights_dir, exist_ok=True)
 
     print("\n" + "=" * 80)
-    print("🧠 [STAGE 1 : TRAIN LOG] 3대 정예 패러다임 자동 하이퍼파라미터 스윕 전이학습 개시")
+    print("TRAIN LOG : 하이퍼파라미터 전이학습 시작")
     print("=" * 80)
-    print(f"⏰ 시작 시간: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"📋 타겟 데이터 설정: {yaml_path}")
+    print(f"START TIME : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"TARGET DATA : {yaml_path}")
 
     # 48시간 타임어택용 최적의 튜닝 그리드 스페이스 설계
     # 런타임 자원과 수렴 속도를 고려해 Learning Rate와 Batch Size를 교차 검증합니다.
@@ -28,18 +28,18 @@ def run_automated_tuning_sweep():
     tuning_records = []
 
     # ======================================================================
-    # 🔄 [PART A] YOLOv11 커스텀 자동 튜닝 루프
+    # YOLOv11 파인튜닝
     # ======================================================================
     print("\n" + "-" * 50)
-    print("🤖 아키텍처 군집 A: YOLOv11 (CNN 패러다임) 파인튜닝 스윕 시작")
+    print(" MODEL : YOLOv11 (CNN 패러다임) 파인튜닝 시작")
     print("-" * 50)
 
     best_yolo_map = -1.0
 
     for run_idx, params in enumerate(tuning_grid):
-        print(f"\n🎬 [YOLOv11 Run {run_idx + 1}/{len(tuning_grid)}] Parameters 주입:")
+        print(f"\n YOLOv11 Run : {run_idx + 1}/{len(tuning_grid)} Parameters 주입:")
         print(
-            f"   ➔ LR: {params['lr0']} | Batch: {params['batch']} | Epochs: {params['epochs']} | Opt: {params['optimizer']}")
+            f" ➔ LR: {params['lr0']} | Batch: {params['batch']} | Epochs: {params['epochs']} | Opt: {params['optimizer']}")
 
         # 기성 가중치 로드 (Transfer Learning 베이스라인)
         model = YOLO("yolo11n.pt")
@@ -65,7 +65,7 @@ def run_automated_tuning_sweep():
             final_map50 = 0.0
             train_loss = 0.0
 
-        print(f"   📊 [RUN FINISHED LOG] 검증 성적 정산 -> mAP50: {final_map50:.4f} | Box Loss: {train_loss:.4f}")
+        print(f" TRAINNING FINISH : 검증 성적 정산 -> mAP50: {final_map50:.4f} | Box Loss: {train_loss:.4f}")
 
         tuning_records.append({
             "Architecture": "YOLOv11", "Run_ID": run_idx + 1, "LR": params["lr0"],
@@ -73,29 +73,29 @@ def run_automated_tuning_sweep():
             "mAP50": round(final_map50, 4), "Val_Loss": round(train_loss, 4)
         })
 
-        # 최고 존엄 챔피언 모델 판별 및 가중치 스위칭 백업
+        # 최고 모델 판별 및 가중치 백업
         if final_map50 > best_yolo_map and results is not None:
             best_yolo_map = final_map50
             best_weight_src = os.path.join(results.save_dir, "weights", "best.pt")
             best_weight_dst = os.path.join(output_weights_dir, "yolo11_best.pt")
             shutil.copy(best_weight_src, best_weight_dst)
-            print(f"   🔥 [BEST MODEL UPDATED] 최고 mAP 도출 가중치 고정 복사 완료 ➔ {best_weight_dst}")
+            print(f" BEST MODEL UPDATED : 최고 mAP 가중치 복사 완료 ➔ {best_weight_dst}")
 
     # ======================================================================
-    # 🔄 [PART B] RT-DETR 커스텀 자동 튜닝 루프
+    # RT-DETR 파인 튜닝
     # ======================================================================
     print("\n" + "-" * 50)
-    print("🤖 아키텍처 군집 B: RT-DETR (Transformer 패러다임) 파인튜닝 스윕 시작")
+    print(" MODEL : RT-DETR (Transformer 패러다임) 파인튜닝 시작")
     print("-" * 50)
 
     best_detr_map = -1.0
 
     for run_idx, params in enumerate(tuning_grid):
-        print(f"\n🎬 [RT-DETR Run {run_idx + 1}/{len(tuning_grid)}] Parameters 주입:")
+        print(f"\n RT-DETR Run : {run_idx + 1}/{len(tuning_grid)} Parameters 주입:")
         # Transformer 계열은 VRAM 부하가 극심하므로 안전 가이드라인 적용하여 배치 크기 절반 하향 조절
         safe_batch = max(2, int(params["batch"]) // 2)
         print(
-            f"   ➔ LR: {params['lr0']} | Safe Batch: {safe_batch} | Epochs: {params['epochs']} | Opt: {params['optimizer']}")
+            f" ➔ LR: {params['lr0']} | Safe Batch: {safe_batch} | Epochs: {params['epochs']} | Opt: {params['optimizer']}")
 
         model = RTDETR("rtdetr-l.pt")
 
@@ -118,7 +118,7 @@ def run_automated_tuning_sweep():
             final_map50 = 0.0
             train_loss = 0.0
 
-        print(f"   📊 [RUN FINISHED LOG] 검증 성적 정산 -> mAP50: {final_map50:.4f}")
+        print(f" RUN FINISHED LOG : 검증 결과 -> mAP50: {final_map50:.4f}")
 
         tuning_records.append({
             "Architecture": "RT-DETR", "Run_ID": run_idx + 1, "LR": params["lr0"],
@@ -131,21 +131,21 @@ def run_automated_tuning_sweep():
             best_weight_src = os.path.join(results.save_dir, "weights", "best.pt")
             best_weight_dst = os.path.join(output_weights_dir, "rtdetr_best.pt")
             shutil.copy(best_weight_src, best_weight_dst)
-            print(f"   🔥 [BEST MODEL UPDATED] 최고 mAP 도출 가중치 고정 복사 완료 ➔ {best_weight_dst}")
+            print(f" BEST MODEL UPDATED : 최고 mAP 가중치 복사 완료 ➔ {best_weight_dst}")
 
     # ======================================================================
-    # 💾 하이퍼파라미터 스윕 최종 성적표 정산 출력 및 저장
+    # 하이퍼파라미터 최종 결과 출력 및 저장
     # ======================================================================
     print("\n" + "=" * 80)
-    print("📊 [STAGE 1 : FINAL REPORT] 하이퍼파라미터 그리드 스윕 최종 정량 스코어보드")
+    print(" FINAL REPORT : 하이퍼파라미터 측정 최종 결과")
     print("=" * 80)
 
     df_sweep = pd.DataFrame(tuning_records)
-    df_sweep.to_csv(os.path.join(output_weights_dir, "hyperparameter_sweep_report.csv"), index=False,
+    df_sweep.to_csv(os.path.join(output_weights_dir, "hyperparameter_log_report.csv"), index=False,
                     encoding="utf-8-sig")
     print(df_sweep.to_string(index=False))
 
-    print(f"\n✅ 학습 및 최고 가중치 영구 고정 프로세스 종료. 종합 튜닝 리포트 보존 완료.")
+    print(f"\n 학습 및 최고 가중치 측정 종료. 리포트 저장 완료.")
     print("=" * 80)
 
 
