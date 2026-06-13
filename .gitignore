@@ -30,6 +30,11 @@ data/MOT20/*
 # 3. 고속 심볼릭 링크로 가공될 출력 폴더 내부 비우기
 data/processed_mot/*
 !data/processed_mot/.gitkeep
+!data/processed_mot/detection/.gitkeep
+!data/processed_mot/detection/images/.gitkeep
+!data/processed_mot/detection/labels/.gitkeep
+!data/processed_mot/tracking/.gitkeep
+!data/processed_mot/tracking/test/.gitkeep
 
 # 4. 학습 완료 후 생성될 챔피언 가중치 폴더 내부 비우기
 weights/*
