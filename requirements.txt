@@ -1,6 +1,7 @@
 ultralytics
 opencv-python
 motmetrics
+kagglehub
 scipy
 numpy
 pandas
