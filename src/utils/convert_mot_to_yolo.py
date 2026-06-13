@@ -1,6 +1,6 @@
-# convert_mot_to_yolo.py
 import os
 import configparser
+import sys
 from pathlib import Path
 
 
@@ -85,35 +85,51 @@ def convert_mot_to_yolo_core(seq_dir: Path, output_base_path: Path, target_split
 
 
 if __name__ == "__main__":
-    # 💡 1. 소스 데이터셋 루트 디렉토리 정의 (두 군데를 모두 훑습니다)
-    SRC_DATASET_ROOTS = ["data/MOT17", "data/MOT20"]
+    # 💡 [핵심 수정] 파일 위치(src/utils/현재파일)를 기준으로 프로젝트 최상위 루트 찾기
+    # parents[0] = utils, parents[1] = src, parents[2] = 프로젝트 루트
+    # 1. 파일 위치 기준으로 프로젝트 최상위 루트 역산
+    PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-    # main.py 및 train.py가 바라보는 최종 통합 가공 데이터셋 타겟 경로
-    OUTPUT_BASE_DIR = Path("data/processed_mot")
+    print("==================================================================")
+    print(f"🔍 [경로 검증] 계산된 프로젝트 루트: {PROJECT_ROOT}")
+    print("==================================================================")
 
-    # 💡 2. MOT17 및 MOT20의 시퀀스 단위 하이브리드 분할 매핑 명세 수립
-    # 접두어 매칭 규칙을 적용하여 파일명 뒤의 확장 이름까지 유연하게 커버합니다.
+    # 2. 🔥 뇌절 방지용 안전장치 (Assertion)
+    # 루트 폴더에 반드시 있어야 하는 'data' 폴더가 없는 엉뚱한 위치라면 즉시 실행 차단!
+    if not (PROJECT_ROOT / "data").exists():
+        print(f"❌ [경로 에러] 예상한 루트에 'data' 폴더가 없습니다!")
+        print(f"👉 현재 계산된 위치: {PROJECT_ROOT}")
+        print(f"🛠️ 해결책: 이 스크립트가 'src/utils/' 폴더 안에 정상적으로 위치해 있는지 확인하세요.")
+        sys.exit(1)  # 프로그램 강제 종료
+    else:
+        print("✅ [검증 통과] 'data' 폴더가 정상 확인되었습니다. 진격을 개시합니다.")
+        print("==================================================================")
+
+    # 소스 데이터셋 루트 디렉토리 정의 (이제 PROJECT_ROOT는 무조건 무결함)
+    SRC_DATASET_ROOTS = [PROJECT_ROOT / "data" / "MOT17", PROJECT_ROOT / "data" / "MOT20"]
+    OUTPUT_BASE_DIR = PROJECT_ROOT / "data" / "processed_mot"
+
+    # MOT17 및 MOT20의 시퀀스 단위 하이브리드 분할 매핑 명세 수립
     TRAIN_KEYWORDS = ["MOT17-02", "MOT17-04", "MOT17-05", "MOT17-09", "MOT20-01", "MOT20-02"]
     VAL_KEYWORDS = ["MOT17-10", "MOT17-11", "MOT20-03"]
-    TEST_KEYWORDS = ["MOT17-13", "MOT20-05"]  # MOT17과 MOT20 각각 1개씩을 순정 대조군으로 격리
+    TEST_KEYWORDS = ["MOT17-13", "MOT20-05"]
 
     print("==================================================================")
     print("⚡ [INTEGRATED DATA LOG] MOT17 + MOT20 하이브리드 심볼릭 변환 개시")
     print("==================================================================")
 
     for src_root in SRC_DATASET_ROOTS:
-        raw_train_path = Path(src_root) / "train"
+        raw_train_path = src_root / "train"
         if not raw_train_path.exists():
             print(f"⚠️ 데이터셋 경로가 존재하지 않아 스킵합니다: {raw_train_path}")
             continue
 
-        print(f"\n📦 타겟 데이터셋 파싱 중 ➔ {src_root}")
+        print(f"\n📦 타겟 데이터셋 파싱 중 ➔ {src_root.name}")
 
         for seq_dir in sorted(raw_train_path.iterdir()):
             if not seq_dir.is_dir():
                 continue
 
-            # 3. 키워드 조건문 분기를 통한 분할 라우팅 시스템
             is_processed = False
 
             # Train 분기 체크
@@ -126,12 +142,11 @@ if __name__ == "__main__":
                 convert_mot_to_yolo_core(seq_dir, OUTPUT_BASE_DIR, target_split='val')
                 is_processed = True
 
-            # Test 분기 체크 (STAGE 3에서 실제 영상 단위 MOTA 지표를 뽑을 격리 세션)
+            # Test 분기 체크
             elif any(kwd in seq_dir.name for kwd in TEST_KEYWORDS):
                 tracking_test_dst = OUTPUT_BASE_DIR / "tracking" / "test" / seq_dir.name
                 tracking_test_dst.parent.mkdir(parents=True, exist_ok=True)
 
-                # 영상 단위 연속성 평가를 위해 통짜 시퀀스 디렉토리 자체를 심볼릭 링크로 고속 배치
                 if not tracking_test_dst.exists():
                     os.symlink(seq_dir.resolve(), tracking_test_dst)
                 print(f"ℹ️ [TRACKING TEST ISOLATION] {seq_dir.name} ➔ STAGE 3 평가군 링크 완료.")
