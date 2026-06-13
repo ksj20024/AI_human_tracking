@@ -1,0 +1,5 @@
+path: ./data/processed_mot/detection  # 통합 폴더 경로 지정
+train: images/train
+val: images/val
+names:
+  0: person

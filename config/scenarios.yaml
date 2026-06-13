@@ -3,34 +3,29 @@ common:
   datasets: ["MOT17", "MOT20"]
   output_dir: "./results"
 
-# 5대 실험 시나리오 매핑
+# 5대 실험 시나리오 매핑 (YOLOv11 / RT-DETR / MobileNet-SSD 정예 3종 타겟팅)
 scenarios:
   0_Baseline:
     description: "표준 성능 측정 기준점"
     ultralytics_args: { imgsz: 640, conf: 0.25, track_buffer: 30 }
     mobilenet_args:   { imgsz: 640, conf: 0.25, track_buffer: 30 }
-    sam2_args:        { imgsz: 640, pred_iou_thresh: 0.70, memory_max_frames: 30 }
 
   1_Fast_Light:
     description: "고속 및 경량화 성능 (해상도 축소)"
     ultralytics_args: { imgsz: 320, conf: 0.25, track_buffer: 30 }
     mobilenet_args:   { imgsz: 320, conf: 0.25, track_buffer: 30 }
-    sam2_args:        { imgsz: 320, pred_iou_thresh: 0.70, memory_max_frames: 30 }
 
   2_High_Precision:
     description: "고정밀 탐지 성능 (해상도 및 임계값 상향)"
     ultralytics_args: { imgsz: 1280, conf: 0.50, track_buffer: 30 }
     mobilenet_args:   { imgsz: 1280, conf: 0.50, track_buffer: 30 }
-    sam2_args:        { imgsz: 1024, pred_iou_thresh: 0.85, memory_max_frames: 30 }
 
   3_Tenacious_Tracking:
     description: "추적 지향 (임계값 하향, 버퍼 상향)"
     ultralytics_args: { imgsz: 640, conf: 0.10, track_buffer: 64 }
     mobilenet_args:   { imgsz: 640, conf: 0.10, track_buffer: 64 }
-    sam2_args:        { imgsz: 640, pred_iou_thresh: 0.40, memory_max_frames: 64 }
 
   4_Strict_Tracking:
     description: "엄격한 추적 지향 (임계값 상향, 버퍼 하향)"
     ultralytics_args: { imgsz: 640, conf: 0.40, track_buffer: 15 }
     mobilenet_args:   { imgsz: 640, conf: 0.40, track_buffer: 15 }
-    sam2_args:        { imgsz: 640, pred_iou_thresh: 0.80, memory_max_frames: 15 }

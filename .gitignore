@@ -1,24 +1,34 @@
-# .gitignore
-
-# PyCharm 설정 파일 무시
+# PyCharm 및 IDE 설정 파일 제외
 .idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
 
-# 가상환경 폴더 무시
-venv/
+# 파이썬 가상환경 및 캐시 파일
 .venv/
-
-# 대용량 데이터셋 (AWS에서 직접 다운로드)
-data/
-
-# 모델 가중치 파일 (AWS에서 직접 다운로드)
-weights/
-*.pt
-*.pth
-*.onnx
-
-# 파이썬 캐시 파편
+venv/
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+.pytest_cache/
 
-# 실험 결과 데이터 저장 폴더
+# ⚠️ [CRITICAL] 대용량 원본 및 하이브리드 가공 데이터셋 제외
+data/MOT17/
+data/MOT20/
+data/processed_mot/
+
+# 🧠 Ultralytics 가중치 다운로드 파일 및 자동 스윕 훈련 로그 폴더 제외
+yolo11n.pt
+rtdetr-l.pt
+runs/
+runs_tuning_yolo/
+runs_tuning_detr/
+config/temp_bytetrack_*.yaml
+
+# 💾 실험 결과 리포트 및 임시 파일 제외
 results/
+*.csv
+*.log
