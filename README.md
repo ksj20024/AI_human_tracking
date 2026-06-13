@@ -87,7 +87,7 @@ chmod +x setup_all.sh
 pip install kagglehub
 
 # 2. 스크립트 실행
-python download_datasets.py
+python utils/download_datasets.py
 ```
 
 ### 2. 하이퍼파라미터 자동 튜닝 및 최적 가중치 측정
