@@ -80,6 +80,16 @@ chmod +x setup_all.sh
 ```
 * **주의**: 다운로드가 완료되면 터미널에 `source .venv/bin/activate`를 입력하여 생성된 가상환경을 활성화해 주세요. (윈도우 로컬 환경에서 테스트 시에는 터미널을 반드시 '관리자 권한'으로 실행해야 원활히 구동됩니다.)
 
+간혹 motchallenge 측 서버의 문제로 데이터 파일 셋업이 안되는 경우 kaggle을 통해 데이터 다운로드
+```bash
+
+# 1. 혹시 모를 kagglehub 설치 (콘다 환경 내부 주입)
+pip install kagglehub
+
+# 2. 스크립트 실행
+python download_datasets.py
+```
+
 ### 2. 하이퍼파라미터 자동 튜닝 및 최적 가중치 측정
 그리드 스페이스 스케줄러를 순회하며 전이 학습을 수행하고, 검증 성능(mAP50)이 가장 높은 각 아키텍처별 최고의 가중치를 `./weights`에 고정합니다.
 ```bash
