@@ -24,7 +24,7 @@ def run_automated_tuning_sweep():
         #{"lr0": 0.001, "batch": 16, "epochs": 50, "optimizer": "AdamW"},
         #{"lr0": 0.005, "batch": 16, "epochs": 50, "optimizer": "SGD"},
         #{"lr0": 0.005, "batch": 16, "epochs": 50, "optimizer": "AdamW"},
-        {"lr0": 0.01, "batch": 32, "epochs": 50, "optimizer": "SGD"},
+        {"lr0": 0.01, "batch": 8, "epochs": 50, "optimizer": "SGD"},
     ]
 
     # 모델 크기가 크므로 에포크를 낮춰서(15) 경향성만 파악
