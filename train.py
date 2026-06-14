@@ -19,77 +19,78 @@ def run_automated_tuning_sweep():
     print(f"TARGET DATA : {yaml_path}")
 
     # 런타임 자원, 속도를 고려해 Learning Rate와 Batch Size를 교차 검증
-    # yolo_tuning_grid = [
-    #     {"lr0": 0.01, "batch": 16, "epochs": 50, "optimizer": "SGD"},
-    #     {"lr0": 0.001, "batch": 16, "epochs": 50, "optimizer": "AdamW"},
-    #     {"lr0": 0.005, "batch": 16, "epochs": 50, "optimizer": "SGD"},
-    #     {"lr0": 0.005, "batch": 16, "epochs": 50, "optimizer": "AdamW"},
-    #     #{"lr0": 0.01, "batch": 32, "epochs": 50, "optimizer": "SGD"},  # 메모리 문제로 g4dn.xlarge에서 돌아가지 않음
-    #     {"lr0": 0.01, "batch": 8, "epochs": 50, "optimizer": "SGD"},
-    # ]
+    yolo_tuning_grid = [
+        {"lr0": 0.01, "batch": 16, "epochs": 50, "optimizer": "SGD"},
+        {"lr0": 0.001, "batch": 16, "epochs": 50, "optimizer": "AdamW"},
+        {"lr0": 0.005, "batch": 16, "epochs": 50, "optimizer": "SGD"},
+        {"lr0": 0.005, "batch": 16, "epochs": 50, "optimizer": "AdamW"},
+    #   {"lr0": 0.01, "batch": 32, "epochs": 50, "optimizer": "SGD"},  # 메모리 문제로 g4dn.xlarge에서 돌아가지 않음
+        {"lr0": 0.01, "batch": 8, "epochs": 50, "optimizer": "SGD"},
+    ]
 
     # 모델 크기가 크므로 에포크를 낮춰서(15) 경향성만 파악
     detr_tuning_grid = [
-        {"lr0": 0.01, "batch": 4, "epochs": 10, "optimizer": "SGD"},
-        {"lr0": 0.001, "batch": 4, "epochs": 10, "optimizer": "AdamW"}
+        {"lr0": 0.01, "batch": 8, "epochs": 15, "optimizer": "SGD"},
+        {"lr0": 0.001, "batch": 8, "epochs": 15, "optimizer": "AdamW"}
     ]
 
     tuning_records = []
 
-    # # ======================================================================
-    # # YOLOv11 파인튜닝
-    # # ======================================================================
-    # print("\n" + "-" * 50)
-    # print(" MODEL : YOLOv11 (CNN 패러다임) 파인튜닝 시작")
-    # print("-" * 50)
-    #
-    # best_yolo_map = -1.0
-    #
-    # for run_idx, params in enumerate(yolo_tuning_grid):
-    #     print(f"\n YOLOv11 Run : {run_idx + 1}/{len(yolo_tuning_grid)} Parameters 주입:")
-    #     print(
-    #         f" ➔ LR: {params['lr0']} | Batch: {params['batch']} | Epochs: {params['epochs']} | Opt: {params['optimizer']}")
-    #
-    #     # 기성 가중치 로드
-    #     model = YOLO("yolo11n.pt")
-    #
-    #     # 파인튜닝 가동 (실시간 에포크 로그는 내부 프레임워크가 콘솔에 트리거)
-    #     results = model.train(
-    #         data=yaml_path,
-    #         epochs=params["epochs"],
-    #         batch=params["batch"],
-    #         lr0=params["lr0"],
-    #         optimizer=params["optimizer"],
-    #         device=0,  # GPU 0번 강제 할당
-    #         project="runs_tuning_yolo",
-    #         name=f"yolo_sweep_{run_idx + 1}",
-    #         verbose=True,  # 각 에포크별 Loss, Precision, Recall 정량 로그 표출
-    #         workers = 2
-    #     )
-    #
-    #     # 학습 종료 후 최종 에포크 검증 성적 스코어 파싱
-    #     if results is not None:
-    #         final_map50 = results.results_dict["metrics/mAP50(B)"]
-    #         train_loss = results.results_dict.get("val/box_loss", 0.0)
-    #     else:
-    #         final_map50 = 0.0
-    #         train_loss = 0.0
-    #
-    #     print(f" TRAINNING FINISH : 검증 성적 정산 -> mAP50: {final_map50:.4f} | Box Loss: {train_loss:.4f}")
-    #
-    #     tuning_records.append({
-    #         "Architecture": "YOLOv11", "Run_ID": run_idx + 1, "LR": params["lr0"],
-    #         "Batch": params["batch"], "Optimizer": params["optimizer"],
-    #         "mAP50": round(final_map50, 4), "Val_Loss": round(train_loss, 4)
-    #     })
-    #
-    #     # 최고 모델 판별 및 가중치 백업
-    #     if final_map50 > best_yolo_map and results is not None:
-    #         best_yolo_map = final_map50
-    #         best_weight_src = os.path.join(results.save_dir, "weights", "best.pt")
-    #         best_weight_dst = os.path.join(output_weights_dir, "yolo11_best.pt")
-    #         shutil.copy(best_weight_src, best_weight_dst)
-    #         print(f" BEST MODEL UPDATED : 최고 mAP 가중치 복사 완료 ➔ {best_weight_dst}")
+    # ======================================================================
+    # YOLOv11 파인튜닝
+    # ======================================================================
+    print("\n" + "-" * 50)
+    print(" MODEL : YOLOv11 (CNN 패러다임) 파인튜닝 시작")
+    print("-" * 50)
+
+    best_yolo_map = -1.0
+
+    for run_idx, params in enumerate(yolo_tuning_grid):
+        print(f"\n YOLOv11 Run : {run_idx + 1}/{len(yolo_tuning_grid)} Parameters 주입:")
+        print(
+            f" ➔ LR: {params['lr0']} | Batch: {params['batch']} | Epochs: {params['epochs']} | Opt: {params['optimizer']}")
+
+        # 기성 가중치 로드
+        model = YOLO("yolo11n.pt")
+
+        # 파인튜닝 가동 (실시간 에포크 로그는 내부 프레임워크가 콘솔에 트리거)
+        results = model.train(
+            data=yaml_path,
+            epochs=params["epochs"],
+            batch=params["batch"],
+            lr0=params["lr0"],
+            optimizer=params["optimizer"],
+            device=0,  # GPU 0번 강제 할당
+            project="runs_tuning_yolo",
+            name=f"yolo_sweep_{run_idx + 1}",
+            verbose=True,  # 각 에포크별 Loss, Precision, Recall 정량 로그 표출
+            workers = 0,  # 하드웨어 제약으로 최후의 보루
+            cache = False # 하드웨어 제약으로 최후의 보루
+        )
+
+        # 학습 종료 후 최종 에포크 검증 성적 스코어 파싱
+        if results is not None:
+            final_map50 = results.results_dict["metrics/mAP50(B)"]
+            train_loss = results.results_dict.get("val/box_loss", 0.0)
+        else:
+            final_map50 = 0.0
+            train_loss = 0.0
+
+        print(f" TRAINNING FINISH : 검증 성적 정산 -> mAP50: {final_map50:.4f} | Box Loss: {train_loss:.4f}")
+
+        tuning_records.append({
+            "Architecture": "YOLOv11", "Run_ID": run_idx + 1, "LR": params["lr0"],
+            "Batch": params["batch"], "Optimizer": params["optimizer"],
+            "mAP50": round(final_map50, 4), "Val_Loss": round(train_loss, 4)
+        })
+
+        # 최고 모델 판별 및 가중치 백업
+        if final_map50 > best_yolo_map and results is not None:
+            best_yolo_map = final_map50
+            best_weight_src = os.path.join(results.save_dir, "weights", "best.pt")
+            best_weight_dst = os.path.join(output_weights_dir, "yolo11_best.pt")
+            shutil.copy(best_weight_src, best_weight_dst)
+            print(f" BEST MODEL UPDATED : 최고 mAP 가중치 복사 완료 ➔ {best_weight_dst}")
 
     # ======================================================================
     # RT-DETR 파인 튜닝
@@ -119,8 +120,7 @@ def run_automated_tuning_sweep():
             project="runs_tuning_detr",
             name=f"detr_sweep_{run_idx + 1}",
             verbose=True,
-            workers = 0,
-            cache = False
+            workers = 4
         )
 
         if results is not None:
