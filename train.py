@@ -20,9 +20,18 @@ def run_automated_tuning_sweep():
 
     # 48시간 타임어택용 최적의 튜닝 그리드 스페이스 설계
     # 런타임 자원과 수렴 속도를 고려해 Learning Rate와 Batch Size를 교차 검증합니다.
-    tuning_grid = [
-        {"lr0": 0.01, "batch": 16, "epochs": 10, "optimizer": "SGD"},
-        {"lr0": 0.005, "batch": 8, "epochs": 10, "optimizer": "AdamW"}
+    yolo_tuning_grid = [
+        {"lr0": 0.01, "batch": 16, "epochs": 50, "optimizer": "SGD"},
+        {"lr0": 0.001, "batch": 16, "epochs": 50, "optimizer": "AdamW"},
+        {"lr0": 0.005, "batch": 16, "epochs": 50, "optimizer": "SGD"},
+        {"lr0": 0.005, "batch": 16, "epochs": 50, "optimizer": "AdamW"},
+        {"lr0": 0.01, "batch": 32, "epochs": 50, "optimizer": "SGD"},  # 배치 크기 변화 추가
+    ]
+
+    # 🐘 [RT-DETR 그리드] 체급이 헤비하므로 에포크를 타이트하게 낮춰서(10) 경향성만 파악
+    detr_tuning_grid = [
+        {"lr0": 0.01, "batch": 8, "epochs": 15, "optimizer": "SGD"},
+        {"lr0": 0.001, "batch": 8, "epochs": 15, "optimizer": "AdamW"}
     ]
 
     tuning_records = []
@@ -36,8 +45,8 @@ def run_automated_tuning_sweep():
 
     best_yolo_map = -1.0
 
-    for run_idx, params in enumerate(tuning_grid):
-        print(f"\n YOLOv11 Run : {run_idx + 1}/{len(tuning_grid)} Parameters 주입:")
+    for run_idx, params in enumerate(yolo_tuning_grid):
+        print(f"\n YOLOv11 Run : {run_idx + 1}/{len(yolo_tuning_grid)} Parameters 주입:")
         print(
             f" ➔ LR: {params['lr0']} | Batch: {params['batch']} | Epochs: {params['epochs']} | Opt: {params['optimizer']}")
 
@@ -90,8 +99,8 @@ def run_automated_tuning_sweep():
 
     best_detr_map = -1.0
 
-    for run_idx, params in enumerate(tuning_grid):
-        print(f"\n RT-DETR Run : {run_idx + 1}/{len(tuning_grid)} Parameters 주입:")
+    for run_idx, params in enumerate(detr_tuning_grid):
+        print(f"\n RT-DETR Run : {run_idx + 1}/{len(detr_tuning_grid)} Parameters 주입:")
         # Transformer 계열은 VRAM 부하가 극심하므로 안전 가이드라인 적용하여 배치 크기 절반 하향 조절
         safe_batch = max(2, int(params["batch"]) // 2)
         print(

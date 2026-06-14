@@ -110,9 +110,9 @@ if __name__ == "__main__":
     OUTPUT_BASE_DIR = PROJECT_ROOT / "data" / "processed_mot"
 
     # MOT17 및 MOT20의 시퀀스 단위 하이브리드 분할 매핑 명세 수립
-    TRAIN_KEYWORDS = ["MOT17-02", "MOT17-04", "MOT17-05", "MOT17-09", "MOT20-01", "MOT20-02"]
-    VAL_KEYWORDS = ["MOT17-10", "MOT17-11", "MOT20-03"]
-    TEST_KEYWORDS = ["MOT17-13", "MOT20-05"]
+    TRAIN_KEYWORDS = ["MOT17-02-FRCNN", "MOT17-04-FRCNN", "MOT17-05-FRCNN", "MOT17-09-FRCNN", "MOT20-01", "MOT20-02"]
+    VAL_KEYWORDS = ["MOT17-10-FRCNN", "MOT17-11-FRCNN", "MOT20-03"]
+    TEST_KEYWORDS = ["MOT17-13-FRCNN", "MOT20-05"]
 
     print("==================================================================")
     print("⚡ [INTEGRATED DATA LOG] MOT17 + MOT20 하이브리드 심볼릭 변환 개시")
