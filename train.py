@@ -20,10 +20,10 @@ def run_automated_tuning_sweep():
 
     # 런타임 자원, 속도를 고려해 Learning Rate와 Batch Size를 교차 검증
     yolo_tuning_grid = [
-        {"lr0": 0.01, "batch": 16, "epochs": 50, "optimizer": "SGD"},
-        {"lr0": 0.001, "batch": 16, "epochs": 50, "optimizer": "AdamW"},
-        {"lr0": 0.005, "batch": 16, "epochs": 50, "optimizer": "SGD"},
-        {"lr0": 0.005, "batch": 16, "epochs": 50, "optimizer": "AdamW"},
+        #{"lr0": 0.01, "batch": 16, "epochs": 50, "optimizer": "SGD"},
+        #{"lr0": 0.001, "batch": 16, "epochs": 50, "optimizer": "AdamW"},
+        #{"lr0": 0.005, "batch": 16, "epochs": 50, "optimizer": "SGD"},
+        #{"lr0": 0.005, "batch": 16, "epochs": 50, "optimizer": "AdamW"},
         {"lr0": 0.01, "batch": 32, "epochs": 50, "optimizer": "SGD"},
     ]
 
@@ -61,8 +61,9 @@ def run_automated_tuning_sweep():
             optimizer=params["optimizer"],
             device=0,  # GPU 0번 강제 할당
             project="runs_tuning_yolo",
-            name=f"yolo_sweep_{run_idx + 1}",
-            verbose=True  # 각 에포크별 Loss, Precision, Recall 정량 로그 표출
+            name=f"yolo_sweep_5",
+            verbose=True,  # 각 에포크별 Loss, Precision, Recall 정량 로그 표출
+            workers = 2
         )
 
         # 학습 종료 후 최종 에포크 검증 성적 스코어 파싱
@@ -116,7 +117,8 @@ def run_automated_tuning_sweep():
             device=0,
             project="runs_tuning_detr",
             name=f"detr_sweep_{run_idx + 1}",
-            verbose=True
+            verbose=True,
+            workers = 2
         )
 
         if results is not None:
