@@ -20,11 +20,11 @@ def run_automated_tuning_sweep():
 
     # 런타임 자원, 속도를 고려해 Learning Rate와 Batch Size를 교차 검증
     yolo_tuning_grid = [
-        {"lr0": 0.01, "batch": 16, "epochs": 50, "optimizer": "SGD"},
-        {"lr0": 0.001, "batch": 16, "epochs": 50, "optimizer": "AdamW"},
-        {"lr0": 0.005, "batch": 16, "epochs": 50, "optimizer": "SGD"},
-        {"lr0": 0.005, "batch": 16, "epochs": 50, "optimizer": "AdamW"},
-        {"lr0": 0.01, "batch": 32, "epochs": 50, "optimizer": "SGD"},
+        #{"lr0": 0.01, "batch": 16, "epochs": 50, "optimizer": "SGD"},
+        #{"lr0": 0.001, "batch": 16, "epochs": 50, "optimizer": "AdamW"},
+        #{"lr0": 0.005, "batch": 16, "epochs": 50, "optimizer": "SGD"},
+        #{"lr0": 0.005, "batch": 16, "epochs": 50, "optimizer": "AdamW"},
+        {"lr0": 0.01, "batch": 8, "epochs": 50, "optimizer": "SGD"},
     ]
 
     # 모델 크기가 크므로 에포크를 낮춰서(15) 경향성만 파악
