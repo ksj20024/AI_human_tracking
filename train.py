@@ -7,7 +7,7 @@ from ultralytics import YOLO, RTDETR
 
 
 def run_automated_tuning_sweep():
-    # 1. 초기 환경 구축
+    # 초기 환경 구축
     yaml_path = "./data/mot_transfer.yaml"
     output_weights_dir = "./weights"
     os.makedirs(output_weights_dir, exist_ok=True)
@@ -18,17 +18,16 @@ def run_automated_tuning_sweep():
     print(f"START TIME : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"TARGET DATA : {yaml_path}")
 
-    # 48시간 타임어택용 최적의 튜닝 그리드 스페이스 설계
-    # 런타임 자원과 수렴 속도를 고려해 Learning Rate와 Batch Size를 교차 검증합니다.
+    # 런타임 자원, 속도를 고려해 Learning Rate와 Batch Size를 교차 검증
     yolo_tuning_grid = [
         {"lr0": 0.01, "batch": 16, "epochs": 50, "optimizer": "SGD"},
         {"lr0": 0.001, "batch": 16, "epochs": 50, "optimizer": "AdamW"},
         {"lr0": 0.005, "batch": 16, "epochs": 50, "optimizer": "SGD"},
         {"lr0": 0.005, "batch": 16, "epochs": 50, "optimizer": "AdamW"},
-        {"lr0": 0.01, "batch": 32, "epochs": 50, "optimizer": "SGD"},  # 배치 크기 변화 추가
+        {"lr0": 0.01, "batch": 32, "epochs": 50, "optimizer": "SGD"},
     ]
 
-    # 🐘 [RT-DETR 그리드] 체급이 헤비하므로 에포크를 타이트하게 낮춰서(10) 경향성만 파악
+    # 모델 크기가 크므로 에포크를 낮춰서(15) 경향성만 파악
     detr_tuning_grid = [
         {"lr0": 0.01, "batch": 8, "epochs": 15, "optimizer": "SGD"},
         {"lr0": 0.001, "batch": 8, "epochs": 15, "optimizer": "AdamW"}
@@ -50,7 +49,7 @@ def run_automated_tuning_sweep():
         print(
             f" ➔ LR: {params['lr0']} | Batch: {params['batch']} | Epochs: {params['epochs']} | Opt: {params['optimizer']}")
 
-        # 기성 가중치 로드 (Transfer Learning 베이스라인)
+        # 기성 가중치 로드
         model = YOLO("yolo11n.pt")
 
         # 파인튜닝 가동 (실시간 에포크 로그는 내부 프레임워크가 콘솔에 트리거)
