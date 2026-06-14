@@ -118,7 +118,7 @@ def run_automated_tuning_sweep():
             project="runs_tuning_detr",
             name=f"detr_sweep_{run_idx + 1}",
             verbose=True,
-            workers = 2
+            workers = 4
         )
 
         if results is not None:
