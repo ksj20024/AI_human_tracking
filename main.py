@@ -6,8 +6,8 @@ import numpy as np
 import pandas as pd
 import glob
 
-# 🚨 [NumPy 2.0+ 호환성 긴급 패치]
-# motmetrics 내부에서 삭제된 np.asfarray를 호출해 터지는 억까를 원천 차단합니다.
+# NumPy 2.0+ 호환성 코드
+# motmetrics 내부에서 삭제된 np.asfarray를 호출해 발생하는 문제 차단.
 if not hasattr(np, "asfarray"):
     np.asfarray = lambda a, *args, **kwargs: np.asarray(a, dtype=float, *args, **kwargs)
 
@@ -30,7 +30,7 @@ def load_config(config_path="config/scenarios.yaml"):
 
 
 def parse_gt_for_tracking(seq_path: str) -> dict:
-    """MOT 원본 gt.txt 파일을 파싱하여 프레임별 정답 딕셔너리를 구성합니다."""
+    """MOT 원ban gt.txt 파일을 파싱하여 프레임별 정답 딕셔너리를 구성합니다."""
     gt_data = {}
     gt_file = os.path.join(seq_path, "gt", "gt.txt")
     if not os.path.exists(gt_file):
@@ -164,7 +164,6 @@ def main():
         "MobileNet-SSD": MobileNetSSDTrackerRunner()
     }
 
-    # YOLO 파인튜닝 가중치 자동 탐색 및 조건부 추가
     yolo_ft_candidates = [
         "weights/yolo11_best.pt",
         "runs_tuning_yolo/yolo_sweep_fixed/weights/best.pt"
@@ -175,7 +174,6 @@ def main():
             print(f" LOADED : YOLOv11 Fine-Tuned 모델 바인딩 성공 ➔ {path}")
             break
 
-    # RT-DETR 파인튜닝 가중치 자동 탐색 및 조건부 추가 (last.pt 강종 대비용 포함)
     detr_ft_candidates = [
         "weights/rtdetr_best.pt",
         "runs_tuning_detr/detr_sweep_1/weights/best.pt",
@@ -197,15 +195,10 @@ def main():
     print("=" * 85)
 
     for scenario_name, params in scenarios.items():
-        # ======================================================================
-        # 💡 이어하기 체크포인트 검증
-        # 이미 이 시나리오에 대한 단독 결과 파일(result_<시나리오명>.csv)이 존재하면 다음 시나리오로 패스!
-        # ======================================================================
         scenario_output_path = f"./results/result_{scenario_name}.csv"
         if os.path.exists(scenario_output_path):
             print(f"SKIP : 이미 가동 완료된 시나리오 감지되어 패스합니다 ➔ '{scenario_output_path}'")
             continue
-        # ======================================================================
 
         print(f"\n SCENARIO RUN : {scenario_name} ({params.get('description', '')})")
         print("-" * 85)
@@ -213,6 +206,32 @@ def main():
         scenario_records = []
 
         for model_name, model_engine in models.items():
+            # ======================================================================
+            # 데이터 규격 동기화형 우회 정책 체계 구축
+            # 시나리오 3번에서 MobileNet의 오탐지 연산 폭주를 원천 차단하되,
+            # 데이터 수집 프레임 규격(Rows)을 맞추기 위해 결측치(NaN) 구조의 더미 데이터를 자동 주입합니다.
+            # ======================================================================
+            if scenario_name == "3_Tenacious_Tracking" and "MobileNet" in model_name:
+                print(f"EXCLUDE : 오탐지 한계로 {model_name}은 3번 시나리오 제외 (테이블 규격 일치용 더미 적재)")
+                for seq_path in test_seqs:
+                    seq_name = os.path.basename(seq_path)
+                    scenario_records.append({
+                        "Scenario": scenario_name,
+                        "Model": model_name,
+                        "Sequence": seq_name,
+                        "FPS": 0.0,
+                        "Peak_VRAM_GB": 0.0,
+                        "MOTA_Percent": np.nan,   # 판다스 매트릭스 인식을 위한 결측치 매핑
+                        "IDF1_Percent": np.nan,   # 수치 통계 왜곡 방지용 NaN 처리
+                        "ID_Swaps": 0,
+                        "False_Positives_FP": 0,
+                        "False_Negatives_FN": 0,
+                        "Total_Frames": 0,
+                        "Total_Time_Sec": 0.0
+                    })
+                continue  # 연산 루프를 돌지 않고 즉시 다음 모델로 안전 도약
+            # ======================================================================
+
             print(f" 가동 모델 : {model_name}")
 
             if "YOLO" in model_name or "DETR" in model_name:
@@ -233,23 +252,11 @@ def main():
                 img_dir = os.path.join(seq_path, "img1")
                 frame_files = sorted([f for f in os.listdir(img_dir) if f.lower().endswith(('.jpg', '.jpeg'))])
 
-                # ======================================================================
-                # 🎯 [하드웨어 병목 저격 예외 처리 분기 세분화 완료]
-                # 1. 2번 시나리오 (High_Precision) + RT-DETR 군: 5프레임 스트라이딩 유지
-                # 2. 3번 시나리오 (Tenacious_Tracking) + MobileNet-SSD: conf 0.10 원활한 실행을 위해 8프레임 설정
-                # ======================================================================
+                # 2번 시나리오 고해상도 DETR 안전 장치만 유지
                 if scenario_name == "2_High_Precision" and "DETR" in model_name:
                     if len(frame_files) > 1000:
-                        print(
-                            f" OOM 오류 방어 : {scenario_name} 환경 {model_name} 부하 제어를 위해 5프레임 간격으로 샘플링합니다. ({len(frame_files)}장 ➔ {len(frame_files) // 5}장)")
+                        print(f" OOM 오류 방어 : {scenario_name} 환경 {model_name} 부하 제어를 위해 5프레임 간격으로 샘플링합니다. ({len(frame_files)}장 ➔ {len(frame_files)//5}장)")
                         frame_files = frame_files[::5]
-
-                elif scenario_name == "3_Tenacious_Tracking" and "MobileNet" in model_name:
-                    if len(frame_files) > 1000:
-                        print(
-                            f" OOM 오류 방어 : {scenario_name} 환경 {model_name} 폭주 연산 제어를 위해 8프레임 간격으로 샘플링합니다. ({len(frame_files)}장 ➔ {len(frame_files) // 8}장)")
-                        frame_files = frame_files[::8]
-                # ======================================================================
 
                 perf_tracker.start_session()
 
@@ -275,7 +282,7 @@ def main():
                             clss = res.boxes.cls.cpu().numpy()
 
                             for box, o_id, cls in zip(boxes, ids, clss):
-                                if int(cls) == 0:  # COCO 규격 0번 (Person)
+                                if int(cls) == 0:
                                     l = float(box[0] - (box[2] / 2.0))
                                     t = float(box[1] - (box[3] / 2.0))
                                     pred_ids.append(int(o_id))
@@ -334,7 +341,7 @@ def main():
             print(f"SCENARIO BACKUP : 시나리오 별 성적 백업 보존  '{scenario_output_path}'")
 
     # ======================================================================
-    # 🔄 [종합 정산] 기존 백업 파일과 신규 백업 파일을 전부 취합하여 병합
+    # 종합 정산 기존 백업 파일과 신규 백업 파일을 전부 취합하여 병합
     # ======================================================================
     print("\n" + "=" * 85)
     print(" 최종 집계 : 각 시나리오별 백업 CSV 파일을 종합 정산하는 중...")
