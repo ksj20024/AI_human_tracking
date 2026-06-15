@@ -157,7 +157,6 @@ def main():
     print("⏳ [STAGE 1 & 2] 순정(Pretrained) vs 파인튜닝(FT) 아키텍처 다중 로드 세션 가동")
     print("=" * 85)
 
-    # 💡 [핵심 변경 1] 순정 모델과 파인튜닝 모델 독립 선언 및 가중치 경로 구체화
     models = {
         "YOLOv11-Pure": YOLO("yolo11n.pt"),
         "RT-DETR-Pure": RTDETR("rtdetr-l.pt"),
@@ -179,7 +178,7 @@ def main():
     detr_ft_candidates = [
         "weights/rtdetr_best.pt",
         "runs_tuning_detr/detr_sweep_1/weights/best.pt",
-        "runs_tuning_detr/detr_sweep_1/weights/last.pt"  # 👈 도중 중단 가중치 구제책
+        "runs_tuning_detr/detr_sweep_1/weights/last.pt"
     ]
     for path in detr_ft_candidates:
         if os.path.exists(path):
@@ -203,7 +202,6 @@ def main():
         for model_name, model_engine in models.items():
             print(f" 가동 모델 : {model_name}")
 
-            # 💡 [핵심 변경 2] 하드웨어 변동 인자 추출 파싱 로직 확장 (Pure 모델 이름도 수용하도록 수정)
             if "YOLO" in model_name or "DETR" in model_name:
                 args = params.get("ultralytics_args", {})
             else:
@@ -222,6 +220,16 @@ def main():
 
                 img_dir = os.path.join(seq_path, "img1")
                 frame_files = sorted([f for f in os.listdir(img_dir) if f.lower().endswith(('.jpg', '.jpeg'))])
+
+                # ======================================================================
+                # 🎯 [통합 반영] 2번 시나리오 + RT-DETR 저격용 OOM 방지 예외 처리
+                # 해상도 1280과 트랜스포머 어텐션 연산이 겹치는 최악의 부하 상황만 프레임을 제어합니다.
+                # ======================================================================
+                if scenario_name == "2_High_Precision" and "DETR" in model_name:
+                    if len(frame_files) > 1000:
+                        print(f"     🔥 [OOM 저격 방어] 고해상도 DETR 부하 제어를 위해 5프레임 간격으로 샘플링합니다. ({len(frame_files)}장 ➔ {len(frame_files)//5}장)")
+                        frame_files = frame_files[::5]
+                # ======================================================================
 
                 perf_tracker.start_session()
 
