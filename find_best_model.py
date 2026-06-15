@@ -73,5 +73,5 @@ if __name__ == "__main__":
     print("🔍 파편화된 튜닝 결과물 정밀 정산 및 챔피언 가중치 수집 가동")
     print("=========================================================\n")
 
-    locate_and_deploy_champion("runs_tuning_yolo", "weights/yolo11_best.pt")
-    locate_and_deploy_champion("runs_tuning_detr", "weights/rtdetr_best.pt")
+    locate_and_deploy_champion("./runs/detect/runs_tuning_yolo", "weights/yolo11_best.pt")
+    locate_and_deploy_champion("./runs/detect/runs_tuning_detr", "weights/rtdetr_best.pt")
