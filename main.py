@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import glob
 
-# [NumPy 2.0+ 호환성 긴급 패치]
+# 🚨 [NumPy 2.0+ 호환성 긴급 패치]
 # motmetrics 내부에서 삭제된 np.asfarray를 호출해 터지는 억까를 원천 차단합니다.
 if not hasattr(np, "asfarray"):
     np.asfarray = lambda a, *args, **kwargs: np.asarray(a, dtype=float, *args, **kwargs)
@@ -222,7 +222,6 @@ def main():
 
             imgsz_arg = int(args.get("imgsz", 640))
             conf_arg = float(args.get("conf", 0.25))
-            # 💡 [PyCharm 경고 패치] Unused 로컬 변수 제거로 클린업 완료
 
             for seq_path in test_seqs:
                 seq_name = os.path.basename(seq_path)
@@ -235,17 +234,21 @@ def main():
                 frame_files = sorted([f for f in os.listdir(img_dir) if f.lower().endswith(('.jpg', '.jpeg'))])
 
                 # ======================================================================
-                #  [하드웨어 병목 저격 예외 처리]
-                # 1. 2번 시나리오 (High_Precision) + RT-DETR 군 (Pure/FT 전체)
-                # 2. 3번 시나리오 (Tenacious_Tracking) + MobileNet-SSD (낮은 임계값으로 인한 FP 연산 폭발 방어)
+                # 🎯 [하드웨어 병목 저격 예외 처리 분기 세분화 완료]
+                # 1. 2번 시나리오 (High_Precision) + RT-DETR 군: 5프레임 스트라이딩 유지
+                # 2. 3번 시나리오 (Tenacious_Tracking) + MobileNet-SSD: conf 0.10 원활한 실행을 위해 8프레임 설정
                 # ======================================================================
-                is_detr_precision_crash = (scenario_name == "2_High_Precision" and "DETR" in model_name)
-                is_mobilenet_tenacious_crash = (scenario_name == "3_Tenacious_Tracking" and "MobileNet" in model_name)
-
-                if is_detr_precision_crash or is_mobilenet_tenacious_crash:
+                if scenario_name == "2_High_Precision" and "DETR" in model_name:
                     if len(frame_files) > 1000:
-                        print(f" OOM 오류 방어 : {scenario_name} 환경 {model_name} 부하 제어를 위해 5프레임 간격으로 샘플링합니다. ({len(frame_files)}장 ➔ {len(frame_files)//5}장)")
+                        print(
+                            f" OOM 오류 방어 : {scenario_name} 환경 {model_name} 부하 제어를 위해 5프레임 간격으로 샘플링합니다. ({len(frame_files)}장 ➔ {len(frame_files) // 5}장)")
                         frame_files = frame_files[::5]
+
+                elif scenario_name == "3_Tenacious_Tracking" and "MobileNet" in model_name:
+                    if len(frame_files) > 1000:
+                        print(
+                            f" OOM 오류 방어 : {scenario_name} 환경 {model_name} 폭주 연산 제어를 위해 8프레임 간격으로 샘플링합니다. ({len(frame_files)}장 ➔ {len(frame_files) // 8}장)")
+                        frame_files = frame_files[::8]
                 # ======================================================================
 
                 perf_tracker.start_session()
@@ -343,12 +346,10 @@ def main():
         print("ERROR : 결합할 시나리오별 결과 파일이 존재하지 않습니다.")
         sys.exit(1)
 
-    # 💡 [PyCharm 경고 패치] List 내부에 DataFrame이 들어감을 명시적으로 선언
     all_dfs: List[pd.DataFrame] = []
     for file_path in sorted(scenario_csv_files):
         all_dfs.append(pd.read_csv(file_path))
 
-    # 💡 [PyCharm 경고 패치] 리턴 객체의 DataFrame 형변환으로 Never 추적 버그 완전 격파
     df_final: pd.DataFrame = pd.concat(all_dfs, ignore_index=True)
 
     output_path = "./results/complete_benchmark_report.csv"
