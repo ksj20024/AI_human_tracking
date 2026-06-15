@@ -2,6 +2,7 @@ ultralytics
 opencv-python
 motmetrics
 kagglehub
+torch
 scipy
 numpy
 pandas
