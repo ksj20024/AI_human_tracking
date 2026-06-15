@@ -4,6 +4,7 @@ import cv2
 import torch
 import numpy as np
 import pandas as pd
+import glob
 
 # 🚨 [NumPy 2.0+ 호환성 긴급 패치]
 # motmetrics 내부에서 삭제된 np.asfarray를 호출해 터지는 억까를 원천 차단합니다.
@@ -189,15 +190,27 @@ def main():
     print(f" ➔ 활성화된 총 모델 개수: {len(models)}개")
     print("SUCCESS : 벤치마크 대상 모델 선택 완료.")
 
-    quantitative_records = []
+    os.makedirs("./results", exist_ok=True)
 
     print("\n" + "=" * 85)
     print(" test 시작 : 가변 파라미터 시나리오 평가 시작")
     print("=" * 85)
 
     for scenario_name, params in scenarios.items():
+        # ======================================================================
+        # 💡 [새로운 요구사항 반영] 이어하기 체크포인트 검증
+        # 이미 이 시나리오에 대한 단독 결과 파일(result_<시나리오명>.csv)이 존재하면 루프 탈출 후 다음으로 점프!
+        # ======================================================================
+        scenario_output_path = f"./results/result_{scenario_name}.csv"
+        if os.path.exists(scenario_output_path):
+            print(f"⏭️ [SKIP] 이미 가동 완료된 시나리오 감지되어 패스합니다 ➔ '{scenario_output_path}'")
+            continue
+        # ======================================================================
+
         print(f"\n🎬 [SCENARIO RUN] ➔ {scenario_name} ({params.get('description', '')})")
         print("-" * 85)
+
+        scenario_records = []
 
         for model_name, model_engine in models.items():
             print(f" 가동 모델 : {model_name}")
@@ -222,12 +235,16 @@ def main():
                 frame_files = sorted([f for f in os.listdir(img_dir) if f.lower().endswith(('.jpg', '.jpeg'))])
 
                 # ======================================================================
-                # 🎯 [통합 반영] 2번 시나리오 + RT-DETR 저격용 OOM 방지 예외 처리
-                # 해상도 1280과 트랜스포머 어텐션 연산이 겹치는 최악의 부하 상황만 프레임을 제어합니다.
+                # 🎯 [하드웨어 병목 저격 예외 처리 방어선]
+                # 1. 2번 시나리오 (High_Precision) + RT-DETR 제품군 (Pure/FT 전체)
+                # 2. 3번 시나리오 (Tenacious_Tracking) + MobileNet-SSD (낮은 임계값으로 인한 FP 연산 폭발 방어)
                 # ======================================================================
-                if scenario_name == "2_High_Precision" and "DETR" in model_name:
+                is_detr_precision_crash = (scenario_name == "2_High_Precision" and "DETR" in model_name)
+                is_mobilenet_tenacious_crash = (scenario_name == "3_Tenacious_Tracking" and "MobileNet" in model_name)
+
+                if is_detr_precision_crash or is_mobilenet_tenacious_crash:
                     if len(frame_files) > 1000:
-                        print(f"     🔥 [OOM 저격 방어] 고해상도 DETR 부하 제어를 위해 5프레임 간격으로 샘플링합니다. ({len(frame_files)}장 ➔ {len(frame_files)//5}장)")
+                        print(f"     🔥 [OOM 저격 방어] {scenario_name} 환경 {model_name} 부하 제어를 위해 5프레임 간격으로 샘플링합니다. ({len(frame_files)}장 ➔ {len(frame_files)//5}장)")
                         frame_files = frame_files[::5]
                 # ======================================================================
 
@@ -293,7 +310,7 @@ def main():
                 print(
                     f"    ➔ [RESULT] FPS: {hardware_metrics['fps']:.2f} | VRAM: {hardware_metrics['vram_gb']:.2f}GB | MOTA: {mota_val:.1f}% | ID Swaps: {swaps} | FP: {fp} | FN: {fn}")
 
-                quantitative_records.append({
+                scenario_records.append({
                     "Scenario": scenario_name,
                     "Model": model_name,
                     "Sequence": seq_name,
@@ -308,12 +325,30 @@ def main():
                     "Total_Time_Sec": hardware_metrics['total_time_sec']
                 })
 
+        if scenario_records:
+            df_scenario = pd.DataFrame(scenario_records)
+            df_scenario.to_csv(scenario_output_path, index=False, encoding="utf-8-sig")
+            print(f"💾 [SCENARIO BACKUP] 시나리오 단독 성적 백업 보존 완수 ➔ '{scenario_output_path}'")
+
+    # ======================================================================
+    # 🔄 [종합 정산] 기존 백업 파일과 신규 백업 파일을 전부 취합하여 병합
+    # ======================================================================
     print("\n" + "=" * 85)
-    print("종합 정량 리포트 하드웨어 및 트래킹 가변 변동 지표 정산 스코어보드")
+    print("📊 [최종 집계] 각 시나리오별 백업 CSV 파일을 종합 정산하는 중...")
     print("=" * 85)
 
-    df_final = pd.DataFrame(quantitative_records)
-    os.makedirs("./results", exist_ok=True)
+    scenario_csv_files = glob.glob("./results/result_*.csv")
+
+    if not scenario_csv_files:
+        print("❌ [ERROR] 결합할 시나리오별 결과 파일이 존재하지 않습니다.")
+        sys.exit(1)
+
+    all_dfs = []
+    for file_path in sorted(scenario_csv_files):
+        all_dfs.append(pd.read_csv(file_path))
+
+    df_final = pd.concat(all_dfs, ignore_index=True)
+
     output_path = "./results/complete_benchmark_report.csv"
     df_final.to_csv(output_path, index=False, encoding="utf-8-sig")
 
@@ -323,7 +358,7 @@ def main():
                     "False_Positives_FP"]].to_string(index=False))
 
     print("\n" + "=" * 85)
-    print(f" 전 과정 성능 실험 완료. 최종 보고서용 데이터 출력 완료 ➔ '{output_path}'")
+    print(f"🎉 [최종 완수] 전 과정 성능 평가 종료! 통합 마스터 데이터 드랍 완료 ➔ '{output_path}'")
     print("=" * 85)
 
 
