@@ -272,13 +272,13 @@ def main():
                 mh = mm.metrics.create()
                 summary = mh.compute(
                     accumulator,
-                    metrics=['mota', 'idf1', 'num_swaps', 'num_misses', 'num_false_positives'],
+                    metrics=['mota', 'idf1', 'num_switches', 'num_misses', 'num_false_positives'],
                     name=seq_name
                 )
 
                 mota_val = float(summary['mota'].iloc[0] * 100)
                 idf1_val = float(summary['idf1'].iloc[0] * 100)
-                swaps = int(summary['num_swaps'].iloc[0])
+                swaps = int(summary['num_switches'].iloc[0])
                 fp = int(summary['num_false_positives'].iloc[0])
                 fn = int(summary['num_misses'].iloc[0])
 
