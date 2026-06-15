@@ -4,6 +4,12 @@ import cv2
 import torch
 import numpy as np
 import pandas as pd
+
+# 🚨 [NumPy 2.0+ 호환성 긴급 패치]
+# motmetrics 내부에서 삭제된 np.asfarray를 호출해 터지는 억까를 원천 차단합니다.
+if not hasattr(np, "asfarray"):
+    np.asfarray = lambda a, *args, **kwargs: np.asarray(a, dtype=float, *args, **kwargs)
+
 import motmetrics as mm
 from tqdm import tqdm
 from ultralytics import YOLO, RTDETR
