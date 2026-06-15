@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import glob
 
-# 🚨 [NumPy 2.0+ 호환성 긴급 패치]
+# [NumPy 2.0+ 호환성 긴급 패치]
 # motmetrics 내부에서 삭제된 np.asfarray를 호출해 터지는 억까를 원천 차단합니다.
 if not hasattr(np, "asfarray"):
     np.asfarray = lambda a, *args, **kwargs: np.asarray(a, dtype=float, *args, **kwargs)
@@ -139,14 +139,14 @@ def main():
     try:
         config = load_config()
     except Exception as e:
-        print(f"❌ 설정 파일 로드 실패: {e}")
+        print(f" 설정 파일 로드 실패: {e}")
         sys.exit(1)
 
     scenarios = config.get("scenarios", {})
 
     test_seq_root = "./data/processed_mot/tracking/test"
     if not os.path.exists(test_seq_root):
-        print(f"❌ [CRITICAL] 테스트 데이터 폴더가 없습니다: {test_seq_root}")
+        print(f" CRITICAL : 테스트 데이터 폴더가 없습니다: {test_seq_root}")
         sys.exit(1)
 
     test_seqs = sorted([os.path.join(test_seq_root, d) for d in os.listdir(test_seq_root)
@@ -155,7 +155,7 @@ def main():
     perf_tracker = PerformanceTracker()
 
     print("\n" + "=" * 85)
-    print("⏳ [STAGE 1 & 2] 순정(Pretrained) vs 파인튜닝(FT) 아키텍처 다중 로드 세션 가동")
+    print(" STAGE 1 & 2 순정(Pretrained) / 파인튜닝(FT) 아키텍처 다중 로드 세션 가동")
     print("=" * 85)
 
     models = {
@@ -184,10 +184,10 @@ def main():
     for path in detr_ft_candidates:
         if os.path.exists(path):
             models["RT-DETR-FT"] = RTDETR(path)
-            print(f" 🐘 [LOADED] RT-DETR Fine-Tuned 모델 바인딩 성공 ➔ {path}")
+            print(f" LOADED : RT-DETR Fine-Tuned 모델 바인딩 성공 ➔ {path}")
             break
 
-    print(f" ➔ 활성화된 총 모델 개수: {len(models)}개")
+    print(f" 활성화된 총 모델 개수: {len(models)}개")
     print("SUCCESS : 벤치마크 대상 모델 선택 완료.")
 
     os.makedirs("./results", exist_ok=True)
@@ -198,16 +198,16 @@ def main():
 
     for scenario_name, params in scenarios.items():
         # ======================================================================
-        # 💡 [새로운 요구사항 반영] 이어하기 체크포인트 검증
-        # 이미 이 시나리오에 대한 단독 결과 파일(result_<시나리오명>.csv)이 존재하면 루프 탈출 후 다음으로 점프!
+        # 💡 이어하기 체크포인트 검증
+        # 이미 이 시나리오에 대한 단독 결과 파일(result_<시나리오명>.csv)이 존재하면 다음 시나리오로 패스!
         # ======================================================================
         scenario_output_path = f"./results/result_{scenario_name}.csv"
         if os.path.exists(scenario_output_path):
-            print(f"⏭️ [SKIP] 이미 가동 완료된 시나리오 감지되어 패스합니다 ➔ '{scenario_output_path}'")
+            print(f"SKIP : 이미 가동 완료된 시나리오 감지되어 패스합니다 ➔ '{scenario_output_path}'")
             continue
         # ======================================================================
 
-        print(f"\n🎬 [SCENARIO RUN] ➔ {scenario_name} ({params.get('description', '')})")
+        print(f"\n SCENARIO RUN : {scenario_name} ({params.get('description', '')})")
         print("-" * 85)
 
         scenario_records = []
@@ -222,7 +222,7 @@ def main():
 
             imgsz_arg = int(args.get("imgsz", 640))
             conf_arg = float(args.get("conf", 0.25))
-            track_buffer_arg = int(args.get("track_buffer", 30))
+            # 💡 [PyCharm 경고 패치] Unused 로컬 변수 제거로 클린업 완료
 
             for seq_path in test_seqs:
                 seq_name = os.path.basename(seq_path)
@@ -235,8 +235,8 @@ def main():
                 frame_files = sorted([f for f in os.listdir(img_dir) if f.lower().endswith(('.jpg', '.jpeg'))])
 
                 # ======================================================================
-                # 🎯 [하드웨어 병목 저격 예외 처리 방어선]
-                # 1. 2번 시나리오 (High_Precision) + RT-DETR 제품군 (Pure/FT 전체)
+                #  [하드웨어 병목 저격 예외 처리]
+                # 1. 2번 시나리오 (High_Precision) + RT-DETR 군 (Pure/FT 전체)
                 # 2. 3번 시나리오 (Tenacious_Tracking) + MobileNet-SSD (낮은 임계값으로 인한 FP 연산 폭발 방어)
                 # ======================================================================
                 is_detr_precision_crash = (scenario_name == "2_High_Precision" and "DETR" in model_name)
@@ -244,7 +244,7 @@ def main():
 
                 if is_detr_precision_crash or is_mobilenet_tenacious_crash:
                     if len(frame_files) > 1000:
-                        print(f"     🔥 [OOM 저격 방어] {scenario_name} 환경 {model_name} 부하 제어를 위해 5프레임 간격으로 샘플링합니다. ({len(frame_files)}장 ➔ {len(frame_files)//5}장)")
+                        print(f" OOM 오류 방어 : {scenario_name} 환경 {model_name} 부하 제어를 위해 5프레임 간격으로 샘플링합니다. ({len(frame_files)}장 ➔ {len(frame_files)//5}장)")
                         frame_files = frame_files[::5]
                 # ======================================================================
 
@@ -308,7 +308,7 @@ def main():
                 fn = int(summary['num_misses'].iloc[0])
 
                 print(
-                    f"    ➔ [RESULT] FPS: {hardware_metrics['fps']:.2f} | VRAM: {hardware_metrics['vram_gb']:.2f}GB | MOTA: {mota_val:.1f}% | ID Swaps: {swaps} | FP: {fp} | FN: {fn}")
+                    f" RESULT FPS: {hardware_metrics['fps']:.2f} | VRAM: {hardware_metrics['vram_gb']:.2f}GB | MOTA: {mota_val:.1f}% | ID Swaps: {swaps} | FP: {fp} | FN: {fn}")
 
                 scenario_records.append({
                     "Scenario": scenario_name,
@@ -328,26 +328,28 @@ def main():
         if scenario_records:
             df_scenario = pd.DataFrame(scenario_records)
             df_scenario.to_csv(scenario_output_path, index=False, encoding="utf-8-sig")
-            print(f"💾 [SCENARIO BACKUP] 시나리오 단독 성적 백업 보존 완수 ➔ '{scenario_output_path}'")
+            print(f"SCENARIO BACKUP : 시나리오 별 성적 백업 보존  '{scenario_output_path}'")
 
     # ======================================================================
     # 🔄 [종합 정산] 기존 백업 파일과 신규 백업 파일을 전부 취합하여 병합
     # ======================================================================
     print("\n" + "=" * 85)
-    print("📊 [최종 집계] 각 시나리오별 백업 CSV 파일을 종합 정산하는 중...")
+    print(" 최종 집계 : 각 시나리오별 백업 CSV 파일을 종합 정산하는 중...")
     print("=" * 85)
 
     scenario_csv_files = glob.glob("./results/result_*.csv")
 
     if not scenario_csv_files:
-        print("❌ [ERROR] 결합할 시나리오별 결과 파일이 존재하지 않습니다.")
+        print("ERROR : 결합할 시나리오별 결과 파일이 존재하지 않습니다.")
         sys.exit(1)
 
-    all_dfs = []
+    # 💡 [PyCharm 경고 패치] List 내부에 DataFrame이 들어감을 명시적으로 선언
+    all_dfs: List[pd.DataFrame] = []
     for file_path in sorted(scenario_csv_files):
         all_dfs.append(pd.read_csv(file_path))
 
-    df_final = pd.concat(all_dfs, ignore_index=True)
+    # 💡 [PyCharm 경고 패치] 리턴 객체의 DataFrame 형변환으로 Never 추적 버그 완전 격파
+    df_final: pd.DataFrame = pd.concat(all_dfs, ignore_index=True)
 
     output_path = "./results/complete_benchmark_report.csv"
     df_final.to_csv(output_path, index=False, encoding="utf-8-sig")
@@ -358,7 +360,7 @@ def main():
                     "False_Positives_FP"]].to_string(index=False))
 
     print("\n" + "=" * 85)
-    print(f"🎉 [최종 완수] 전 과정 성능 평가 종료! 통합 마스터 데이터 드랍 완료 ➔ '{output_path}'")
+    print(f" 최종 완료 : 전 과정 성능 평가 종료! 통합 결과 데이터 생성 완료 ➔ '{output_path}'")
     print("=" * 85)
 
 
